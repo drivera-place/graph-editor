@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Editor de Grafos</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="graphCanvas" width="800" height="600"></canvas>
+    <script>
+        const canvas = document.getElementById('graphCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let nodes = [];
+        let edges = [];
+        let selectedNode = null;
+        let isDragging = false;
+
+        canvas.addEventListener('click', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            const clickedNode = nodes.find(node => Math.hypot(node.x - x, node.y - y) < 25);
+            if (clickedNode) {
+                selectedNode = clickedNode;
+            } else {
+                nodes.push({ x, y });
+                selectedNode = null;
+            }
+            drawGraph();
+        });
+
+        canvas.addEventListener('mousedown', (event) => {
+            if (selectedNode) {
+                isDragging = true;
+                canvas.addEventListener('mousemove', drawDottedLine);
+            }
+        });
+
+        canvas.addEventListener('mouseup', (event) => {
+            if (isDragging) {
+                isDragging = false;
+                canvas.removeEventListener('mousemove', drawDottedLine);
+
+                const rect = canvas.getBoundingClientRect();
+                const x = event.clientX - rect.left;
+                const y = event.clientY - rect.top;
+
+                const targetNode = nodes.find(node => Math.hypot(node.x - x, node.y - y) < 10);
+                if (targetNode && targetNode !== selectedNode) {
+                    edges.push({ start: selectedNode, end: targetNode });
+                }
+                drawGraph();
+            }
+        });
+
+        function drawGraph() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            edges.forEach(edge => {
+                drawEdge(edge);
+            });
+            nodes.forEach(node => {
+                drawNode(node);
+            });
+        }
+
+        function drawNode(node) {
+            ctx.beginPath();
+            ctx.arc(node.x, node.y, 10, 0, 2 * Math.PI);
+            ctx.fillStyle = node === selectedNode ? 'red' : 'blue';
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function drawEdge(edge) {
+            ctx.beginPath();
+            ctx.moveTo(edge.start.x, edge.start.y);
+            ctx.lineTo(edge.end.x, edge.end.y);
+            ctx.strokeStyle = 'black';
+            ctx.stroke();
+        }
+
+        function drawDottedLine(event) {
+            const rect = canvas.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+
+            drawGraph();
+            ctx.beginPath();
+            ctx.setLineDash([5, 5]);
+            ctx.moveTo(selectedNode.x, selectedNode.y);
+            ctx.lineTo(x, y);
+            ctx.strokeStyle = 'red';
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        drawGraph();
+    </script>
+</body>
+</html>
